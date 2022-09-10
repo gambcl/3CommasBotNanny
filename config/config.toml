@@ -1,0 +1,16 @@
+interval_seconds = 300      # Waits this amount of seconds between processing cycles
+
+target_pnl_percent = 4.0    # Looks for at least this PnL percentage before updating SL
+adjusted_sl_percent = 1.0   # The new SL value (use a +ve value for an in-profit SL, use a -ve value for a loss)
+
+
+[three_commas]
+api_key = "REPLACE_ME"
+api_secret = "REPLACE_ME"
+account_ids = [11111111, 22222222, 33333333]  # If you want to process ALL the bot deals in an account, then list the account IDs here
+bot_ids = []  # If you only want to process some specific bot deals, then list the bot IDs here
+
+
+[telegram]
+telegram_bot_token = ""
+telegram_chat_id = ""
