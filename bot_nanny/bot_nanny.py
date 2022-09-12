@@ -1,5 +1,5 @@
 import logging
-import requests
+import requests  # type: ignore
 import rich  # type: ignore
 import time
 
@@ -88,7 +88,7 @@ class BotNanny:
         Start processing Bot Deals.
         """
         self.output_startup_message()
-        self._send_telegram_message("BotNanny started")
+        self._send_telegram_message(f"BotNanny {__version__} started")
         while True:
             try:
                 discovered_bot_ids = self._fetch_bot_ids_for_account_ids(self.selected_account_ids)
@@ -240,7 +240,7 @@ class BotNanny:
                     self.output_message(MessageType.ERROR, f"Failed to fetch deal info for deal id {deal_id}: {error}")
                     return
 
-                # Apply profit-protection logic here
+                # Apply profit-protection logic here.
                 if self._deal_is_active(data):
                     self._apply_deal_profit_protection(data)
             except Exception as ex:
@@ -295,7 +295,7 @@ class BotNanny:
             if deal["leverage_custom_value"]:
                 leverage_amount = float(deal["leverage_custom_value"])
             stop_loss_type = deal["stop_loss_type"]
-            # Flip sign from 3Commas API convention for DCA Bot-Deals
+            # Flip sign from 3Commas API convention for DCA Bot-Deals.
             stop_loss_percentage = -float(deal["stop_loss_percentage"])
             tsl_enabled = deal["tsl_enabled"]
             current_sl_is_loss = (stop_loss_type == "stop_loss") and (stop_loss_percentage < 0) and not tsl_enabled
@@ -328,40 +328,59 @@ class BotNanny:
                     ]
                 )
             )
-            # Evaluate deal to determine if StopLoss should be applied or updated
+            # Evaluate deal to determine if StopLoss should be applied or updated.
+            # TODO: Allow multiple PnL/SL pairs
             if current_sl_is_loss and (actual_profit_percentage >= self.target_pnl_percent):
                 message = f"Deal id {deal_id} has reached {self.target_pnl_percent}% PnL, " + \
                           f"updating SL to {self.adjusted_sl_percent}%"
-                self.output_message(MessageType.INFO, message)
+                console_message = \
+                    f"Deal id {deal_id} has reached {self.markup_pnl_value(self.target_pnl_percent)}% PnL, " + \
+                    f"updating SL to {self.markup_pnl_value(self.adjusted_sl_percent)}%"
+                self.output_message(MessageType.INFO, message, console_message)
                 self._send_telegram_message(message)
-                # Update SL to self.adjusted_sl_percent
-                # NOTE: DCA Bots on 3Commas use a flipped SL value
-                # i.e. a +ve SL on 3C means a true SL at a loss, and a -ve SL on 3C actually means a true SL in profit
-                error, data = self.py3cw.request(
-                    entity="deals",
-                    action="update_deal",
-                    action_id=f"{deal_id}",
-                    payload={
-                        "deal_id": deal_id,
-                        # "stop_loss_timeout_enabled": True,
-                        # "stop_loss_timeout_in_seconds": 30,
-                        "stop_loss_type": "stop_loss",
-                        # Flip sign for 3Commas API convention for DCA Bot-Deals
-                        "stop_loss_percentage": -self.adjusted_sl_percent
-                    }
-                )
-                if error:
-                    message = f"Failed to update SL for deal id {deal_id}: {error}"
-                    self.output_message(MessageType.ERROR, message)
-                    self._send_telegram_message(message)
-                    return
-                message = f"Updated SL for deal id {deal_id}"
-                self.output_message(MessageType.SUCCESS, message)
-                self._send_telegram_message(message)
+                # Update SL to self.adjusted_sl_percent.
+                self._update_deal_stoploss(deal_id, self.adjusted_sl_percent)
             else:
                 self.output_message(MessageType.INFO, f"Nothing to do for deal id {deal_id}")
         except Exception as ex:
             self.output_message(MessageType.ERROR, f"Caught Exception applying deal profit-protection: {ex}")
+
+    def _update_deal_stoploss(self, deal_id, stop_loss_percentage: float) -> bool:
+        """
+        Updates the stoploss on a DCA Bot Deal.
+
+        :param deal_id: The deal ID to be updated.
+        :param stop_loss_percentage: The new stoploss percentage.
+        :return: True if stoploss updated successfully, otherwise False.
+        """
+        try:
+            # NOTE: DCA Bots on 3Commas use a flipped SL value.
+            # i.e. a +ve SL on 3C means a true SL at a loss, and a -ve SL on 3C actually means a true SL in profit.
+            error, data = self.py3cw.request(
+                entity="deals",
+                action="update_deal",
+                action_id=f"{deal_id}",
+                payload={
+                    "deal_id": deal_id,
+                    # "stop_loss_timeout_enabled": True,
+                    # "stop_loss_timeout_in_seconds": 30,
+                    "stop_loss_type": "stop_loss",
+                    # Flip sign for 3Commas API convention for DCA Bot-Deals.
+                    "stop_loss_percentage": -stop_loss_percentage
+                }
+            )
+            if error:
+                message = f"Failed to update SL for deal id {deal_id}: {error}"
+                self.output_message(MessageType.ERROR, message)
+                self._send_telegram_message(message)
+                return False
+            message = f"Updated SL for deal id {deal_id}"
+            self.output_message(MessageType.SUCCESS, message)
+            self._send_telegram_message(message)
+            return True
+        except Exception as ex:
+            self.output_message(MessageType.ERROR, f"Caught Exception updating deal stoploss: {ex}")
+            return False
 
     def _send_telegram_message(self, message: str):
         """
