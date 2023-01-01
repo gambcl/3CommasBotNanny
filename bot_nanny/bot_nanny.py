@@ -6,7 +6,7 @@ import time
 from . import __version__
 from enum import Enum
 from py3cw.request import Py3CW  # type: ignore
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class BotNanny:
         Start processing Bot Deals.
         """
         self.output_startup_message()
-        self._send_telegram_message(f"BotNanny {__version__} started")
+        self._send_telegram_message(f"*BotNanny {__version__}* started")
         while True:
             try:
                 discovered_bot_ids = self._fetch_bot_ids_for_account_ids(self.selected_account_ids)
@@ -300,9 +300,11 @@ class BotNanny:
             tsl_enabled = deal["tsl_enabled"]
             current_sl_is_loss = (stop_loss_type == "stop_loss") and (stop_loss_percentage < 0) and not tsl_enabled
             actual_profit_percentage = float(deal['actual_profit_percentage'])
+            bot_name = f"{deal['bot_name']} ({deal['pair']})"
             self.output_message(MessageType.INFO, f"Checking deal id {deal_id}")
             self.output_message(
                 MessageType.INFO,
+                f"{bot_name}: " +
                 ", ".join(
                     [
                         f"deal_id={deal_id}",
@@ -315,6 +317,7 @@ class BotNanny:
                         f"actual_profit_percentage={actual_profit_percentage}"
                     ]
                 ),
+                f"{bot_name}: " +
                 ", ".join(
                     [
                         f"deal_id={deal_id}",
@@ -331,9 +334,10 @@ class BotNanny:
             # Evaluate deal to determine if StopLoss should be applied or updated.
             # TODO: Allow multiple PnL/SL pairs
             if current_sl_is_loss and (actual_profit_percentage >= self.target_pnl_percent):
-                message = f"Deal id {deal_id} has reached {self.target_pnl_percent}% PnL, " + \
+                message = f"{bot_name}: Deal id {deal_id} has reached {self.target_pnl_percent}% PnL, " + \
                           f"updating SL to {self.adjusted_sl_percent}%"
                 console_message = \
+                    f"{bot_name}: " + \
                     f"Deal id {deal_id} has reached {self.markup_pnl_value(self.target_pnl_percent)}% PnL, " + \
                     f"updating SL to {self.markup_pnl_value(self.adjusted_sl_percent)}%"
                 self.output_message(MessageType.INFO, message, console_message)
@@ -341,19 +345,21 @@ class BotNanny:
                 # Update SL to self.adjusted_sl_percent.
                 self._update_deal_stoploss(deal_id, self.adjusted_sl_percent)
             else:
-                self.output_message(MessageType.INFO, f"Nothing to do for deal id {deal_id}")
+                self.output_message(MessageType.INFO, f"{bot_name}: Nothing to do for deal id {deal_id}")
         except Exception as ex:
             self.output_message(MessageType.ERROR, f"Caught Exception applying deal profit-protection: {ex}")
 
-    def _update_deal_stoploss(self, deal_id, stop_loss_percentage: float) -> bool:
+    def _update_deal_stoploss(self, deal: Dict, stop_loss_percentage: float) -> bool:
         """
         Updates the stoploss on a DCA Bot Deal.
 
-        :param deal_id: The deal ID to be updated.
+        :param deal: Dictionary containing the DCA Bot Deal information (fetched from 3Commas).
         :param stop_loss_percentage: The new stoploss percentage.
         :return: True if stoploss updated successfully, otherwise False.
         """
         try:
+            deal_id = deal["id"]
+            bot_name = f"{deal['bot_name']} ({deal['pair']})"
             # NOTE: DCA Bots on 3Commas use a flipped SL value.
             # i.e. a +ve SL on 3C means a true SL at a loss, and a -ve SL on 3C actually means a true SL in profit.
             error, data = self.py3cw.request(
@@ -370,11 +376,11 @@ class BotNanny:
                 }
             )
             if error:
-                message = f"Failed to update SL for deal id {deal_id}: {error}"
+                message = f"{bot_name}: Failed to update SL for deal id {deal_id}: {error}"
                 self.output_message(MessageType.ERROR, message)
                 self._send_telegram_message(message)
                 return False
-            message = f"Updated SL for deal id {deal_id}"
+            message = f"{bot_name}: Updated SL for deal id {deal_id}"
             self.output_message(MessageType.SUCCESS, message)
             self._send_telegram_message(message)
             return True
@@ -394,11 +400,11 @@ class BotNanny:
             telegram_chat_id = telegram_config.get("telegram_chat_id", None)
             if telegram_bot_token and telegram_chat_id and message:
                 url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage?" + \
-                      f"chat_id={telegram_chat_id}&text={message}"
+                      f"chat_id={telegram_chat_id}&text={message}&parse_mode=Markdown"
                 requests.get(url)
 
     @staticmethod
-    def output_message(message_type: MessageType, message: str, console_message: str = None):
+    def output_message(message_type: MessageType, message: str, console_message: Optional[str] = None):
         """
         Outputs a message to the console and/or logfile.
 
