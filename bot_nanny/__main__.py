@@ -4,6 +4,7 @@ import os
 import sys
 import tomli  # type: ignore
 
+from logging.handlers import TimedRotatingFileHandler
 from bot_nanny.bot_nanny import BotNanny
 from . import __version__
 
@@ -18,6 +19,7 @@ def main(args):
     """
     # Parse command-line arguments.
     root_parser = argparse.ArgumentParser(prog="python3 -m lunar_research")
+    root_parser.add_argument("--logpath", type=str, help="path for log files", default="/var/log")
     root_parser.add_argument("--config", type=str, help="config file", required=True)
     root_parser.add_argument("-v", "--version", action="version", version=f"BotNanny {__version__}")
 
@@ -25,12 +27,15 @@ def main(args):
     args = root_parser.parse_args(args)
 
     # Configure logging.
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs(args.logpath, exist_ok=True)
     logging.basicConfig(
-        filename=os.path.join("logs", f"bot_nanny.{os.getpid()}.log"),
-        filemode="w",
+        level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        level=logging.DEBUG)
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            TimedRotatingFileHandler(os.path.join(args.logpath, "bot_nanny.log"), when="midnight", utc=True)
+        ]
+    )
 
     # Read config file.
     config = read_config(args.config)
