@@ -1,12 +1,10 @@
 import logging
 import requests  # type: ignore
-import rich  # type: ignore
 import time
 
 from . import __version__
-from enum import Enum
 from py3cw.request import Py3CW  # type: ignore
-from typing import Dict, Set, Optional
+from typing import Dict, Set
 
 logger = logging.getLogger(__name__)
 
@@ -15,17 +13,6 @@ logger = logging.getLogger(__name__)
 THREE_COMMAS_API_INTERVAL_SECONDS = 1
 THREE_COMMAS_BOTS_BATCH_SIZE = 100
 THREE_COMMAS_DEALS_BATCH_SIZE = 1000
-
-
-class MessageType(Enum):
-    """
-    Enum for identifying message levels.
-    """
-    DEBUG = 0,
-    INFO = 1,
-    SUCCESS = 2,
-    WARNING = 3,
-    ERROR = 4
 
 
 class BotNanny:
@@ -97,10 +84,10 @@ class BotNanny:
                 deal_ids = discovered_deal_ids.union(self.selected_deal_ids)
                 self._process_deal_ids(deal_ids)
             except Exception as ex:
-                self.output_message(MessageType.ERROR, f"Caught Exception in BotNanny.run(): {ex}")
+                logger.error(f"Caught Exception in BotNanny.run(): {ex}")
             finally:
                 # Sleep until next check.
-                self.output_message(MessageType.INFO, f"Sleeping for {self.interval_seconds}s ...")
+                logger.info(f"Sleeping for {self.interval_seconds}s ...")
                 time.sleep(self.interval_seconds)
 
     def _fetch_bot_ids_for_account_ids(self, account_ids: Set[int]) -> Set[int]:
@@ -120,15 +107,12 @@ class BotNanny:
                     action_id=f"{account_id}"
                 )
                 if error:
-                    self.output_message(
-                        MessageType.ERROR,
-                        f"Failed to fetch account info for account id {account_id}: {error}"
-                    )
+                    logger.error(f"Failed to fetch account info for account id {account_id}: {error}")
                     continue
 
                 account_name = data["name"]
 
-                self.output_message(MessageType.INFO, f"Fetching bot ids for account '{account_name}'")
+                logger.info(f"Fetching bot ids for account '{account_name}'")
                 account_bot_ids = set()
                 completed = False
                 offset = 0
@@ -143,28 +127,19 @@ class BotNanny:
                         }
                     )
                     if error:
-                        self.output_message(
-                            MessageType.ERROR,
-                            f"Failed to fetch bot ids for account '{account_name}': {error}"
-                        )
+                        logger.error(f"Failed to fetch bot ids for account '{account_name}': {error}")
                         completed = True  # Give up on this account if we hit errors.
                     else:
                         for bot in data:
                             bot_name = bot["name"]
-                            self.output_message(MessageType.INFO, f"Found bot '{bot_name}'")
+                            logger.info(f"Found bot '{bot_name}'")
                             account_bot_ids.add(bot["id"])
                         offset += len(data)  # Increase offset for next call.
                         completed = len(data) < THREE_COMMAS_BOTS_BATCH_SIZE  # Have we finished?
-                self.output_message(
-                    MessageType.DEBUG,
-                    f"Found {len(account_bot_ids)} bots for account '{account_name}'"
-                )
+                logger.debug(f"Found {len(account_bot_ids)} bots for account '{account_name}'")
                 bot_ids.update(account_bot_ids)
             except Exception as ex:
-                self.output_message(
-                    MessageType.ERROR,
-                    f"Caught Exception fetching bot ids for account id {account_id}: {ex}"
-                )
+                logger.error(f"Caught Exception fetching bot ids for account id {account_id}: {ex}")
         return bot_ids
 
     def _fetch_deal_ids_for_bot_ids(self, bot_ids: Set[int]) -> Set[int]:
@@ -184,11 +159,11 @@ class BotNanny:
                     action_id=f"{bot_id}"
                 )
                 if error:
-                    self.output_message(MessageType.ERROR, f"Failed to fetch bot info for bot id {bot_id}: {error}")
+                    logger.error(f"Failed to fetch bot info for bot id {bot_id}: {error}")
                     continue
                 bot_name = data["name"]
 
-                self.output_message(MessageType.INFO, f"Fetching active deal ids for bot '{bot_name}'")
+                logger.info(f"Fetching active deal ids for bot '{bot_name}'")
                 bot_deal_ids = set()
                 completed = False
                 offset = 0
@@ -204,22 +179,19 @@ class BotNanny:
                         }
                     )
                     if error:
-                        self.output_message(
-                            MessageType.ERROR,
-                            f"Failed to fetch active deals for bot '{bot_name}': {error}"
-                        )
+                        logger.error(f"Failed to fetch active deals for bot '{bot_name}': {error}")
                         completed = True  # Give up on this bot if we hit errors.
                     else:
                         for deal in data:
                             deal_id = deal["id"]
-                            self.output_message(MessageType.DEBUG, f"Found active deal id {deal_id}")
+                            logger.debug(f"Found active deal id {deal_id}")
                             bot_deal_ids.add(deal_id)
                         offset += len(data)  # Increase offset for next call.
                         completed = len(data) < THREE_COMMAS_DEALS_BATCH_SIZE  # Have we finished?
-                self.output_message(MessageType.INFO, f"Found {len(bot_deal_ids)} active deals for bot '{bot_name}'")
+                logger.info(f"Found {len(bot_deal_ids)} active deals for bot '{bot_name}'")
                 deal_ids.update(bot_deal_ids)
             except Exception as ex:
-                self.output_message(MessageType.ERROR, f"Caught Exception fetching deal ids for bot id {bot_id}: {ex}")
+                logger.error(f"Caught Exception fetching deal ids for bot id {bot_id}: {ex}")
         return deal_ids
 
     def _process_deal_ids(self, deal_ids: Set[int]):
@@ -237,14 +209,14 @@ class BotNanny:
                     action_id=f"{deal_id}"
                 )
                 if error:
-                    self.output_message(MessageType.ERROR, f"Failed to fetch deal info for deal id {deal_id}: {error}")
+                    logger.error(f"Failed to fetch deal info for deal id {deal_id}: {error}")
                     return
 
                 # Apply profit-protection logic here.
                 if self._deal_is_active(data):
                     self._apply_deal_profit_protection(data)
             except Exception as ex:
-                self.output_message(MessageType.ERROR, f"Caught Exception processing deal id {deal_id}: {ex}")
+                logger.error(f"Caught Exception processing deal id {deal_id}: {ex}")
 
     def _deal_is_active(self, deal: Dict):
         """
@@ -256,7 +228,7 @@ class BotNanny:
         deal_id = deal["id"]
         deal_status = deal["status"]
         if deal["finished?"]:
-            self.output_message(MessageType.DEBUG, f"Ignoring finished deal id {deal_id}")
+            logger.debug(f"Ignoring finished deal id {deal_id}")
             return False
         if deal["status"] in [
             "cancelled",
@@ -276,7 +248,7 @@ class BotNanny:
             "bought_take_profit_pending",
             "settled"
         ]:
-            self.output_message(MessageType.DEBUG, f"Ignoring deal id {deal_id} with status '{deal_status}'")
+            logger.debug(f"Ignoring deal id {deal_id} with status '{deal_status}'")
             return False
         return True
 
@@ -301,9 +273,8 @@ class BotNanny:
             current_sl_is_loss = (stop_loss_type == "stop_loss") and (stop_loss_percentage < 0) and not tsl_enabled
             actual_profit_percentage = float(deal['actual_profit_percentage'])
             bot_name = f"{deal['bot_name']} ({deal['pair']})"
-            self.output_message(MessageType.INFO, f"Checking deal id {deal_id}")
-            self.output_message(
-                MessageType.INFO,
+            logger.info(f"Checking deal id {deal_id}")
+            logger.info(
                 f"{bot_name}: " +
                 ", ".join(
                     [
@@ -316,19 +287,6 @@ class BotNanny:
                         f"stop_loss_percentage={stop_loss_percentage}",
                         f"actual_profit_percentage={actual_profit_percentage}"
                     ]
-                ),
-                f"{bot_name}: " +
-                ", ".join(
-                    [
-                        f"deal_id={deal_id}",
-                        f"deal_status={deal_status}",
-                        f"strategy={strategy}",
-                        f"leverage_type={leverage_type}",
-                        f"leverage_amount={leverage_amount}",
-                        f"stop_loss_type={stop_loss_type}",
-                        f"stop_loss_percentage={self.markup_pnl_value(stop_loss_percentage)}",
-                        f"actual_profit_percentage={self.markup_pnl_value(actual_profit_percentage)}"
-                    ]
                 )
             )
             # Evaluate deal to determine if StopLoss should be applied or updated.
@@ -336,18 +294,14 @@ class BotNanny:
             if current_sl_is_loss and (actual_profit_percentage >= self.target_pnl_percent):
                 message = f"{bot_name}: Deal id {deal_id} has reached {self.target_pnl_percent}% PnL, " + \
                           f"updating SL to {self.adjusted_sl_percent}%"
-                console_message = \
-                    f"{bot_name}: " + \
-                    f"Deal id {deal_id} has reached {self.markup_pnl_value(self.target_pnl_percent)}% PnL, " + \
-                    f"updating SL to {self.markup_pnl_value(self.adjusted_sl_percent)}%"
-                self.output_message(MessageType.INFO, message, console_message)
+                logger.info(message)
                 self._send_telegram_message(message)
                 # Update SL to self.adjusted_sl_percent.
-                self._update_deal_stoploss(deal_id, self.adjusted_sl_percent)
+                self._update_deal_stoploss(deal, self.adjusted_sl_percent)
             else:
-                self.output_message(MessageType.INFO, f"{bot_name}: Nothing to do for deal id {deal_id}")
+                logger.info(f"{bot_name}: Nothing to do for deal id {deal_id}")
         except Exception as ex:
-            self.output_message(MessageType.ERROR, f"Caught Exception applying deal profit-protection: {ex}")
+            logger.error(f"Caught Exception applying deal profit-protection: {ex}")
 
     def _update_deal_stoploss(self, deal: Dict, stop_loss_percentage: float) -> bool:
         """
@@ -377,15 +331,15 @@ class BotNanny:
             )
             if error:
                 message = f"{bot_name}: Failed to update SL for deal id {deal_id}: {error}"
-                self.output_message(MessageType.ERROR, message)
+                logger.error(message)
                 self._send_telegram_message(message)
                 return False
             message = f"{bot_name}: Updated SL for deal id {deal_id}"
-            self.output_message(MessageType.SUCCESS, message)
+            logger.info(message)
             self._send_telegram_message(message)
             return True
         except Exception as ex:
-            self.output_message(MessageType.ERROR, f"Caught Exception updating deal stoploss: {ex}")
+            logger.error(f"Caught Exception updating deal stoploss: {ex}")
             return False
 
     def _send_telegram_message(self, message: str):
@@ -398,64 +352,21 @@ class BotNanny:
             telegram_config = self.config["telegram"]
             telegram_bot_token = telegram_config.get("telegram_bot_token", None)
             telegram_chat_id = telegram_config.get("telegram_chat_id", None)
+            escaped_message = message.replace("_", "\\_")
             if telegram_bot_token and telegram_chat_id and message:
                 url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage?" + \
-                      f"chat_id={telegram_chat_id}&text={message}&parse_mode=Markdown"
+                      f"chat_id={telegram_chat_id}&text={escaped_message}&parse_mode=Markdown"
                 requests.get(url)
-
-    @staticmethod
-    def output_message(message_type: MessageType, message: str, console_message: Optional[str] = None):
-        """
-        Outputs a message to the console and/or logfile.
-
-        :param message_type: Enum value indicating message level.
-        :param message: Message to be output.
-        :param console_message: Console-specific message (for rich formatting).
-        """
-        if message_type == MessageType.DEBUG:
-            logger.debug(message)
-        elif message_type == MessageType.INFO:
-            rich.print(f"[black on blue]INFO[/black on blue]: {console_message or message}")
-            logger.info(message)
-        elif message_type == MessageType.SUCCESS:
-            rich.print(f"[black on green]SUCCESS[/black on green]: {console_message or message}")
-            logger.info(message)
-        elif message_type == MessageType.WARNING:
-            rich.print(f"[black on dark_orange3]WARNING[/black on dark_orange3]: {console_message or message}")
-            logger.warning(message)
-        elif message_type == MessageType.ERROR:
-            rich.print(f"[black on red]ERROR[/black on red]: {console_message or message}")
-            logger.error(message)
 
     @staticmethod
     def output_startup_message():
         """
         Outputs a startup message to the console and/or logfile.
         """
-        message1 = f"BotNanny {__version__}"
-        message2 = "Use at your own risk, no warranty supplied or implied!"
-        message3 = "The authors and any contributors assume NO RESPONSIBILITY for your trading results."
-        message4 = "If you find this program useful, please consider sending a small tip..."
-        btc_address = "BTC: 3BvA3ft3F4maDnuy9z6jqAarZNsPSYU1CE"
-        eth_address = "ETH: 0xb1d21907f05da3a30d890976a2423c43be0ae7d0"
-        ltc_address = "LTC: MF6ET8pFEgV4TH83dt1qnwnSMPHbzQTbUj"
-
-        BotNanny.output_message(MessageType.INFO, message1, f"[blue]{message1}[/blue]")
-        BotNanny.output_message(MessageType.INFO, message2, f"[blue]{message2}[/blue]")
-        BotNanny.output_message(MessageType.INFO, message3, f"[blue]{message3}[/blue]")
-        BotNanny.output_message(MessageType.INFO, message4, f"[blue]{message4}[/blue]")
-        BotNanny.output_message(MessageType.INFO, btc_address, f"[dark_orange]{btc_address}[/dark_orange]")
-        BotNanny.output_message(MessageType.INFO, eth_address, f"[dark_orange]{eth_address}[/dark_orange]")
-        BotNanny.output_message(MessageType.INFO, ltc_address, f"[dark_orange]{ltc_address}[/dark_orange]")
-
-    @staticmethod
-    def markup_pnl_value(pnl_value: float) -> str:
-        """
-        Applies rich-formatting to PnL values.
-
-        :param pnl_value: The PnL value to be formatted.
-        :return: Formatted string.
-        """
-        if pnl_value < 0:
-            return f"[red]{pnl_value}[/red]"
-        return f"[green]{pnl_value}[/green]"
+        logger.info(f"BotNanny {__version__}")
+        logger.info("Use at your own risk, no warranty supplied or implied!")
+        logger.info("The authors and any contributors assume NO RESPONSIBILITY for your trading results.")
+        logger.info("If you find this program useful, please consider sending a small tip...")
+        logger.info("BTC: 3BvA3ft3F4maDnuy9z6jqAarZNsPSYU1CE")
+        logger.info("ETH: 0xb1d21907f05da3a30d890976a2423c43be0ae7d0")
+        logger.info("LTC: MF6ET8pFEgV4TH83dt1qnwnSMPHbzQTbUj")
