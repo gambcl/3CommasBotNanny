@@ -1,0 +1,12 @@
+.DS_Store
+.dockerignore
+.flake8
+.git/
+.github/
+.gitignore
+.idea/
+.mypy_cache/
+config/
+logs/
+requirements-dev.txt
+venv/
