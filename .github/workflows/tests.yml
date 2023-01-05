@@ -9,11 +9,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.9
+      - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.9'
+          python-version: '3.8'
           # Optional - x64 or x86 architecture, defaults to x64
           architecture: 'x64'
       # You can test your matrix by printing the current Python version
@@ -31,3 +31,7 @@ jobs:
         run: |
           pip install flake8
           flake8 bot_nanny
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.0.0
+        with:
+          dockerfile: Dockerfile
