@@ -68,4 +68,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: npx -p @semantic-release/git -p @semantic-release/changelog -p @semantic-release/exec -p @google/semantic-release-replace-plugin -p semantic-release-docker -p conventional-changelog-conventionalcommits semantic-release
+        run: npx -p @semantic-release/git -p @semantic-release/changelog -p @semantic-release/exec -p @google/semantic-release-replace-plugin -p @semantic-release-plus/docker -p conventional-changelog-conventionalcommits semantic-release

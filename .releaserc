@@ -86,7 +86,7 @@
     ["@semantic-release/exec", {
       "prepareCmd": "docker build -t gambcl/bot_nanny ."
     }],
-    ["semantic-release-docker", {
+    ["@semantic-release-plus/docker", {
       "name": "gambcl/bot_nanny"
     }]
   ]
