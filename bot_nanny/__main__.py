@@ -18,8 +18,8 @@ def main(args):
     :param args: Command-line arguments.
     """
     # Parse command-line arguments.
-    root_parser = argparse.ArgumentParser(prog="python3 -m lunar_research")
-    root_parser.add_argument("--logpath", type=str, help="path for log files", default="/var/log")
+    root_parser = argparse.ArgumentParser(prog="python3 -m bot_nanny")
+    root_parser.add_argument("--logpath", type=str, help="path for log files", default="/var/log/bot_nanny")
     root_parser.add_argument("--config", type=str, help="config file", required=True)
     root_parser.add_argument("-v", "--version", action="version", version=f"BotNanny {__VERSION__}")
 
