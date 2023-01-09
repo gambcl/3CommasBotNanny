@@ -2,7 +2,7 @@ import logging
 import requests  # type: ignore
 import time
 
-from . import __version__
+from . import __VERSION__
 from py3cw.request import Py3CW  # type: ignore
 from typing import Dict, Set
 
@@ -75,7 +75,7 @@ class BotNanny:
         Start processing Bot Deals.
         """
         self.output_startup_message()
-        self._send_telegram_message(f"*BotNanny {__version__}* started")
+        self._send_telegram_message(f"*BotNanny {__VERSION__}* started")
         while True:
             try:
                 discovered_bot_ids = self._fetch_bot_ids_for_account_ids(self.selected_account_ids)
@@ -363,7 +363,7 @@ class BotNanny:
         """
         Outputs a startup message to the console and/or logfile.
         """
-        logger.info(f"BotNanny {__version__}")
+        logger.info(f"BotNanny {__VERSION__}")
         logger.info("Use at your own risk, no warranty supplied or implied!")
         logger.info("The authors and any contributors assume NO RESPONSIBILITY for your trading results.")
         logger.info("If you find this program useful, please consider sending a small tip...")
