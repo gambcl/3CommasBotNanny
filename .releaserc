@@ -20,10 +20,10 @@
           {"type": "revert", "section": "Reverts"},
           {"type": "remove", "section": "Removals"},
           {"type": "deprecate", "section": "Deprecations"},
+          {"type": "refactor", "section": "Code Refactoring"},
           {"type": "docs", "section": "Documentation", "hidden": true},
           {"type": "style", "section": "Styles", "hidden": true},
           {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
-          {"type": "refactor", "section": "Code Refactoring", "hidden": true},
           {"type": "test", "section": "Tests", "hidden": true},
           {"type": "build", "section": "Build System", "hidden": true},
           {"type": "ci", "section": "Continuous Integration", "hidden": true}
@@ -42,10 +42,10 @@
           {"type": "revert", "section": "Reverts"},
           {"type": "remove", "section": "Removals"},
           {"type": "deprecate", "section": "Deprecations"},
+          {"type": "refactor", "section": "Code Refactoring"},
           {"type": "docs", "section": "Documentation", "hidden": true},
           {"type": "style", "section": "Styles", "hidden": true},
           {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
-          {"type": "refactor", "section": "Code Refactoring", "hidden": true},
           {"type": "test", "section": "Tests", "hidden": true},
           {"type": "build", "section": "Build System", "hidden": true},
           {"type": "ci", "section": "Continuous Integration", "hidden": true}
