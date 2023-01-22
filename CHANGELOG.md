@@ -1,3 +1,10 @@
+## [0.1.7](https://github.com/gambcl/BotNanny/compare/v0.1.6...v0.1.7) (2023-01-22)
+
+
+### Bug Fixes
+
+* rename bot_nanny to botnanny ([ba249eb](https://github.com/gambcl/BotNanny/commit/ba249eb5564e3fec12d52ae1b741696a35a9e546))
+
 ## [0.1.6](https://github.com/gambcl/BotNanny/compare/v0.1.5...v0.1.6) (2023-01-09)
 
 
