@@ -5,7 +5,7 @@ import sys
 import tomli  # type: ignore
 
 from logging.handlers import TimedRotatingFileHandler
-from bot_nanny.bot_nanny import BotNanny
+from botnanny.botnanny import BotNanny
 from . import __VERSION__
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,8 @@ def main(args):
     :param args: Command-line arguments.
     """
     # Parse command-line arguments.
-    root_parser = argparse.ArgumentParser(prog="python3 -m bot_nanny")
-    root_parser.add_argument("--logpath", type=str, help="path for log files", default="/var/log/bot_nanny")
+    root_parser = argparse.ArgumentParser(prog="python3 -m botnanny")
+    root_parser.add_argument("--logpath", type=str, help="path for log files", default="/var/log/botnanny")
     root_parser.add_argument("--config", type=str, help="config file", required=True)
     root_parser.add_argument("-v", "--version", action="version", version=f"BotNanny {__VERSION__}")
 
@@ -33,15 +33,15 @@ def main(args):
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            TimedRotatingFileHandler(os.path.join(args.logpath, "bot_nanny.log"), when="midnight", utc=True)
+            TimedRotatingFileHandler(os.path.join(args.logpath, "botnanny.log"), when="midnight", utc=True)
         ]
     )
 
     # Read config file.
     config = read_config(args.config)
 
-    bot_nanny = BotNanny(config)
-    bot_nanny.run()
+    botnanny = BotNanny(config)
+    botnanny.run()
 
 
 def read_config(filepath: str):

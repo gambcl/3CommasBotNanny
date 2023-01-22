@@ -58,12 +58,12 @@
       "@google/semantic-release-replace-plugin", {
         "replacements": [
           {
-            "files": ["bot_nanny/__init__.py"],
+            "files": ["botnanny/__init__.py"],
             "from": "__VERSION__ = \".*\"",
             "to": "__VERSION__ = \"${nextRelease.version}\"",
             "results": [
               {
-                "file": "bot_nanny/__init__.py",
+                "file": "botnanny/__init__.py",
                 "hasChanged": true,
                 "numMatches": 1,
                 "numReplacements": 1
@@ -76,7 +76,7 @@
     ],
     ["@semantic-release/git", {
       "assets": [
-        "bot_nanny/*.py",
+        "botnanny/*.py",
         "config/config.toml",
         "requirements.txt",
         "*.md",
@@ -85,10 +85,10 @@
       "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
     }],
     ["@semantic-release/exec", {
-      "prepareCmd": "docker build -t gambcl/bot_nanny ."
+      "prepareCmd": "docker build -t gambcl/botnanny ."
     }],
     ["@semantic-release-plus/docker", {
-      "name": "gambcl/bot_nanny"
+      "name": "gambcl/botnanny"
     }]
   ]
 }

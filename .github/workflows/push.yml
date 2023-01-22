@@ -41,7 +41,7 @@ jobs:
       - name: Lint python with flake8
         run: |
           pip install flake8
-          flake8 bot_nanny
+          flake8 botnanny
 
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.0.0

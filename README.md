@@ -40,7 +40,7 @@ Edit the file `config/live.toml` (found in the config directory) to provide the 
 
 Change directory into the BotNanny directory.
 
-Execute BotNanny: `python -m bot_nanny --config ./config/live.toml`
+Execute BotNanny: `python -m botnanny --config ./config/live.toml`
 
 Processing activity should now be visible in the console and also in a logfile found in the logs directory.
 

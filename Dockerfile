@@ -4,7 +4,7 @@ WORKDIR /
 
 COPY LICENSE .
 COPY README.md .
-COPY bot_nanny bot_nanny
+COPY botnanny botnanny
 COPY requirements.txt .
 
 # Install dependencies
@@ -14,5 +14,5 @@ RUN python -m pip install --no-cache-dir --upgrade pip
 # hadolint ignore=DL3059
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Run bot_nanny module
-CMD ["python3", "-m", "bot_nanny", "--logpath", "/var/log", "--config", "/etc/bot_nanny/live.toml"]
+# Run botnanny module
+CMD ["python3", "-m", "botnanny", "--logpath", "/var/log", "--config", "/etc/botnanny/live.toml"]
